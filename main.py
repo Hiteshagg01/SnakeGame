@@ -10,14 +10,13 @@ CELL_NUMBER_Y = 2 * 16
 
 FPS = 60
 
-SNAKE_SPEED = int(1000 / 12)
-SNAKE_COLOR = (70, 175, 215)
-FRUIT_COLOR = (215, 55, 70)
+SNAKE_SPEED = int(1000 / 10)
 BACKGROUND_COLOR = (175, 215, 70)
 GRASS_COLOR = (167, 209, 61)
 FONT_COLOR = (56, 74, 12)
 
 
+# Snake Object
 class SNAKE:
     def __init__(self, screen):
         self.screen = screen
@@ -128,6 +127,7 @@ class SNAKE:
             self.direction = Vector2(0, 1)
 
 
+# Fruit Object
 class FRUIT:
     def __init__(self, screen):
         self.screen = screen
@@ -144,6 +144,7 @@ class FRUIT:
         self.pos = Vector2(random.randint(0, CELL_NUMBER_X - 1), random.randint(0, CELL_NUMBER_Y - 1))
 
 
+# Main Game
 class GAME:
     def __init__(self):
         self.playing = True
@@ -214,7 +215,7 @@ class GAME:
 
     def game_pause(self):
         pause_font = pygame.font.Font("font/PoetsenOne-Regular.ttf", 40)
-        pause_surf = pause_font.render('Paused', True, FONT_COLOR)
+        pause_surf = pause_font.render('Paused', True, (150, 120, 200))
 
         pause_x = (CELL_NUMBER_X * CELL_SIZE / 2)
         pause_y = (CELL_NUMBER_Y * CELL_SIZE / 2)
@@ -294,18 +295,32 @@ class GAME:
                             self.snake.direction = Vector2(0, 0)
 
                     if not self.pause:
-                        if event.key == pygame.K_w:
+                        if event.key == pygame.K_UP:
                             self.snake.turn_up()
 
-                        elif event.key == pygame.K_a:
+                        elif event.key == pygame.K_LEFT:
                             self.snake.turn_left()
 
-                        elif event.key == pygame.K_s:
+                        elif event.key == pygame.K_DOWN:
                             self.snake.turn_down()
 
-                        elif event.key == pygame.K_d:
+                        elif event.key == pygame.K_RIGHT:
                             self.snake.turn_right()
 
+
+'''
+Game Controls
+
+up arrow - move up
+down arrow - move down
+right arrow - move right
+left arrow - move left
+
+enter/return - pause game
+
+oops game over?
+press space bar to restart 
+'''
 
 if __name__ == "__main__":
     game = GAME()
