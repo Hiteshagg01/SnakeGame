@@ -5,12 +5,12 @@ import random
 # Game constants
 
 CELL_SIZE = 20
-CELL_NUMBER_X = 8 * 3
-CELL_NUMBER_Y = 8 * 4
+CELL_NUMBER_X = 2 * 9
+CELL_NUMBER_Y = 2 * 16
 
 FPS = 60
 
-SNAKE_SPEED = int(1000 / 5)
+SNAKE_SPEED = int(1000 / 12)
 SNAKE_COLOR = (70, 175, 215)
 FRUIT_COLOR = (215, 55, 70)
 BACKGROUND_COLOR = (175, 215, 70)
@@ -100,15 +100,16 @@ class SNAKE:
                         self.screen.blit(self.body_tr, block_rect)
 
     def move_snake(self):
-        if self.new_block:
-            temp_body = self.body[:]
-            temp_body.append(temp_body[-1] + self.direction)
-            self.body = temp_body[:]
-            self.new_block = False
-        else:
-            temp_body = self.body[1:]
-            temp_body.append(temp_body[-1] + self.direction)
-            self.body = temp_body[:]
+        if self.direction != Vector2(0, 0):
+            if self.new_block:
+                temp_body = self.body[:]
+                temp_body.append(temp_body[-1] + self.direction)
+                self.body = temp_body[:]
+                self.new_block = False
+            else:
+                temp_body = self.body[1:]
+                temp_body.append(temp_body[-1] + self.direction)
+                self.body = temp_body[:]
 
     def turn_left(self):
         if self.direction != Vector2(1, 0):
@@ -126,19 +127,13 @@ class SNAKE:
         if self.direction != Vector2(0, -1):
             self.direction = Vector2(0, 1)
 
-    def add_block(self):
-        self.new_block = True
-
-    def reset(self):
-        self.body = [Vector2(1, 1), Vector2(2, 1), Vector2(3, 1)]
-        self.direction = Vector2(0, 0)
-
 
 class FRUIT:
     def __init__(self, screen):
         self.screen = screen
-        self.pos = Vector2(1, 1)
+        self.pos = Vector2(-1, -1)
         self.respawn_fruit()
+
         self.apple = pygame.image.load('graphics/re_back_apple.png').convert_alpha()
 
     def draw_fruit(self):
@@ -152,10 +147,13 @@ class FRUIT:
 class GAME:
     def __init__(self):
         self.playing = True
+        self.pause = False
+        self.fail = False
 
         pygame.init()
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((CELL_SIZE * CELL_NUMBER_X, CELL_SIZE * CELL_NUMBER_Y))
+        pygame.display.set_caption("Snake Game")
 
         self.SCREEN_UPDATE = pygame.USEREVENT
         pygame.time.set_timer(self.SCREEN_UPDATE, SNAKE_SPEED)
@@ -183,65 +181,76 @@ class GAME:
         score = str(len(self.snake.body) - 3)
         score_surf = score_font.render(score, True, FONT_COLOR)
 
-        score_x = (CELL_NUMBER_X * CELL_SIZE - 25)
-        score_y = (CELL_NUMBER_Y * CELL_SIZE - 25)
+        score_x = CELL_NUMBER_X * CELL_SIZE - 25
+        score_y = 25
 
         score_rect = score_surf.get_rect(center=(score_x, score_y))
         apple_rect = self.fruit.apple.get_rect(midright=(score_rect.left, score_rect.centery))
 
-        frame_w = apple_rect.width + score_rect.width + 5
-        frame_h = apple_rect.height
+        frame_w = apple_rect.width + score_rect.width + 6
+        frame_h = apple_rect.height + 6
+        bg_rect = pygame.Rect(apple_rect.left, apple_rect.top - 3, frame_w, frame_h)
 
-        bg_rect = pygame.Rect(apple_rect.left, apple_rect.top, frame_w, frame_h)
         pygame.draw.rect(self.screen, BACKGROUND_COLOR, bg_rect)
         pygame.draw.rect(self.screen, FONT_COLOR, bg_rect, 2)
         self.screen.blit(score_surf, score_rect)
         self.screen.blit(self.fruit.apple, apple_rect)
 
+    def game_over(self):
+        game_over_font = pygame.font.Font("font/PoetsenOne-Regular.ttf", 40)
+        game_over_surf = game_over_font.render('GAME OVER !!', True, (255, 60, 60))
+
+        game_over_x = (CELL_NUMBER_X * CELL_SIZE / 2)
+        game_over_y = (CELL_NUMBER_Y * CELL_SIZE / 2)
+
+        game_over_rect = game_over_surf.get_rect(center=(game_over_x, game_over_y))
+
+        frame_w = game_over_rect.width + 20
+        frame_h = game_over_rect.height + 10
+        frame = pygame.Rect(game_over_rect.left - 10, game_over_rect.top - 5, frame_w, frame_h)
+
+        pygame.draw.rect(self.screen, FONT_COLOR, frame, 2)
+        self.screen.blit(game_over_surf, game_over_rect)
+
+    def game_pause(self):
+        pause_font = pygame.font.Font("font/PoetsenOne-Regular.ttf", 40)
+        pause_surf = pause_font.render('Paused', True, FONT_COLOR)
+
+        pause_x = (CELL_NUMBER_X * CELL_SIZE / 2)
+        pause_y = (CELL_NUMBER_Y * CELL_SIZE / 2)
+
+        pause_rect = pause_surf.get_rect(center=(pause_x, pause_y))
+
+        frame_w = pause_rect.width + 20
+        frame_h = pause_rect.height + 10
+        frame = pygame.Rect(pause_rect.left - 10, pause_rect.top - 5, frame_w, frame_h)
+
+        pygame.draw.rect(self.screen, FONT_COLOR, frame, 2)
+        self.screen.blit(pause_surf, pause_rect)
+
     def check_fruit_collision(self):
         if self.fruit.pos == self.snake.body[-1]:
-            # print('SCORE')
-
             self.fruit.respawn_fruit()
-            # Make sure fruit does not spawn on snake itself
+            self.snake.new_block = True
 
+            # Make sure fruit does not spawn on snake itself
             for block in self.snake.body[:-1]:
                 if block == self.fruit.pos:
                     self.fruit.respawn_fruit()
 
-            self.snake.add_block()
-
     def check_wall_collision(self):
         if not (0 <= self.snake.body[-1].x < CELL_NUMBER_X and 0 <= self.snake.body[-1].y < CELL_NUMBER_Y):
-            # print('FAIL', self.snake.body[-1])
-            self.game_over()
+            self.fail = True
 
     def check_self_collision(self):
         for block in self.snake.body[:-1]:
             if block == self.snake.body[-1]:
-                self.game_over()
-
-    def game_over(self):
-        # game_over_font = pygame.font.Font("font/PoetsenOne-Regular.ttf", 40)
-        # game_over_surf = game_over_font.render('GAME OVER', True, (255, 60, 60))
-        #
-        # game_over_x = (CELL_NUMBER_X * CELL_SIZE / 2)
-        # game_over_y = (CELL_NUMBER_Y * CELL_SIZE / 2)
-        #
-        # game_over_rect = game_over_surf.get_rect(center=(game_over_x, game_over_y))
-        #
-        # self.screen.blit(game_over_surf, game_over_rect)
-        # pygame.draw.rect(game_over_surf, game_over_rect)
-        self.snake.reset()
+                self.fail = True
 
     def play(self):
-        pygame.display.set_caption("Snake Game")
         self.set_background()
-
         self.display_score()
-
         self.snake.draw_snake()
-
         self.fruit.draw_fruit()
 
         # Make sure fruit does not spawn on snake itself
@@ -249,36 +258,53 @@ class GAME:
             if block == self.fruit.pos:
                 self.fruit.respawn_fruit()
 
-        pygame.display.update()
+        if self.pause:
+            self.game_pause()
 
+        if self.fail:
+            self.game_over()
+
+        pygame.display.update()
         self.clock.tick(FPS)
 
     def start_game(self):
         while self.playing:
+
+            self.play()
+
             for event in pygame.event.get():
+                if event.type == self.SCREEN_UPDATE:
+                    if not (self.pause or self.fail):
+                        self.snake.move_snake()
+                        self.check_fruit_collision()
+                        self.check_wall_collision()
+                        self.check_self_collision()
+
                 if event.type == pygame.QUIT:
                     self.playing = False
 
-                if event.type == self.SCREEN_UPDATE:
-                    self.snake.move_snake()
-                    self.check_fruit_collision()
-                    self.check_wall_collision()
-                    self.check_self_collision()
-
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_w:
-                        self.snake.turn_up()
+                    if event.key == pygame.K_RETURN:
+                        self.pause = not self.pause
 
-                    elif event.key == pygame.K_a:
-                        self.snake.turn_left()
+                    if event.key == pygame.K_SPACE:
+                        if self.fail:
+                            self.fail = False
+                            self.snake.body = [Vector2(1, 1), Vector2(2, 1), Vector2(3, 1)]
+                            self.snake.direction = Vector2(0, 0)
 
-                    elif event.key == pygame.K_s:
-                        self.snake.turn_down()
+                    if not self.pause:
+                        if event.key == pygame.K_w:
+                            self.snake.turn_up()
 
-                    elif event.key == pygame.K_d:
-                        self.snake.turn_right()
+                        elif event.key == pygame.K_a:
+                            self.snake.turn_left()
 
-            self.play()
+                        elif event.key == pygame.K_s:
+                            self.snake.turn_down()
+
+                        elif event.key == pygame.K_d:
+                            self.snake.turn_right()
 
 
 if __name__ == "__main__":
